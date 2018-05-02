@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib import layers
+from ResNET.model import *
 
 
 class ImprovedAutoEncoder:
@@ -42,8 +43,8 @@ class ImprovedAutoEncoder:
             self.dec = decoder("decoder", self.z_in, num_units, num_repeats, self.training, carry=self.carry, batch_norm=batch_norm, reuse=True)
             self.alpha = tf.placeholder(tf.float32, shape=())
 
-            d_real = create_resnet_discriminator("discriminator", self.x, self.training)
-            d_fake = create_resnet_discriminator("discriminator", self.dec, self.training, reuse=True)
+            d_real = create_resnet_18("discriminator", self.x, self.training, 1)
+            d_fake = create_resnet_18("discriminator", self.dec, self.training, 1, reuse=True)
 
             d_loss_real = tf.reduce_mean(tf.square(d_real-1))
             d_loss_fake = tf.reduce_mean(tf.square(d_fake))
@@ -73,39 +74,6 @@ class ImprovedAutoEncoder:
             tf.summary.scalar("rec_loss", self.rec_loss)
             tf.summary.histogram("z", self.z)
             tf.summary.histogram("z_in", self.z_in)
-
-
-def create_resnet_discriminator(name, x, training, reuse=False):
-
-    with tf.variable_scope(name, reuse=reuse):
-        l1 = layers.conv2d(x, 64, 7, stride=2, activation_fn=tf.nn.elu)
-        p1 = layers.max_pool2d(l1, kernel_size=3, stride=2, padding="SAME")
-        b1 = create_resnet_block(p1, 64, training, skip_connection=True)
-        b2 = create_resnet_block(b1, 64, training)
-        b3 = create_resnet_block(b2, 128, training, skip_connection=True)
-        b4 = create_resnet_block(b3, 128, training)
-        b5 = create_resnet_block(b4, 256, training, skip_connection=True)
-        b6 = create_resnet_block(b5, 256, training)
-
-        ft = tf.reshape(b6, [-1, int(b6.shape[1]*b6.shape[2]*b6.shape[3])])
-        fc = layers.fully_connected(ft, 1, activation_fn=None)
-
-        return fc
-
-
-def create_resnet_block(x, num_units, training, skip_connection=False):
-    h = layers.conv2d(x, num_units, biases_initializer=None, kernel_size=3, activation_fn=None)
-    h = tf.layers.batch_normalization(h, momentum=0.9, scale=True, fused=True, training=training)
-    h = tf.nn.elu(h)
-    h = layers.conv2d(h, num_units, biases_initializer=None, kernel_size=3, activation_fn=None)
-
-    if not skip_connection:
-        h = h+x
-
-    h = tf.layers.batch_normalization(h, momentum=0.9, scale=True, fused=True, training=training)
-    h = tf.nn.elu(h)
-
-    return h
 
 
 def decoder(name, z, num_units, num_repeats, is_training, carry=None, batch_norm=False, unit=8, reuse=False):
