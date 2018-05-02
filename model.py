@@ -25,7 +25,7 @@ class ImprovedAutoEncoder:
         self.g_loss = None
         self.train_op = None
 
-    def build(self, img_size, num_z, num_units, num_repeats, batch_norm=True, gray_scale=False):
+    def build_model(self, img_size, num_z, num_units, num_repeats, batch_norm=True, gray_scale=False):
 
         with tf.variable_scope(self.name):
             num_inputs = 1 if gray_scale else 3
@@ -43,18 +43,21 @@ class ImprovedAutoEncoder:
             self.dec = decoder("decoder", self.z_in, num_units, num_repeats, self.training, carry=self.carry, batch_norm=batch_norm, reuse=True)
             self.alpha = tf.placeholder(tf.float32, shape=())
 
+    def build_train_op(self):
+
+        with tf.variable_scope(self.name):
             d_real = create_resnet_18("discriminator", self.x, self.training, 1)
             d_fake = create_resnet_18("discriminator", self.dec, self.training, 1, reuse=True)
 
             d_loss_real = tf.reduce_mean(tf.square(d_real-1))
             d_loss_fake = tf.reduce_mean(tf.square(d_fake))
 
-            g_loss_fake = tf.reduce_mean(tf.square(d_fake-1))
+            g_loss_fake = tf.reduce_mean(tf.square(d_fake - 1))
 
-            self.rec_loss = self.alpha*tf.reduce_mean(tf.square(self.rec-self.x))+0.01*tf.reduce_mean(tf.square(self.z))
+            self.rec_loss = self.alpha * tf.reduce_mean(tf.square(self.rec - self.x)) + 0.01 * tf.reduce_mean(tf.square(self.z))
 
             self.g_loss = g_loss_fake
-            self.d_loss = d_loss_real+d_loss_fake
+            self.d_loss = d_loss_real + d_loss_fake
 
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 

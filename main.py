@@ -23,7 +23,8 @@ with tf.Session(config=config) as sess:
     thread = tf.train.start_queue_runners(sess, coord)
     model = ImprovedAutoEncoder("AAE-Proto")
 
-    model.build(img_size, num_z, num_units, num_repeats)
+    model.build_model(img_size, num_z, num_units, num_repeats)
+    model.build_train_op()
     sess.run(tf.global_variables_initializer())
 
     saver = tf.train.Saver()
