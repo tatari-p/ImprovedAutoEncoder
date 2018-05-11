@@ -6,7 +6,7 @@ from ResNET.model import *
 class ImprovedAutoEncoder:
 
     def __init__(self, name):
-        self.name = name
+        self._name = name
 
         self.x = None
         self.cor = None
@@ -24,6 +24,10 @@ class ImprovedAutoEncoder:
         self.d_loss = None
         self.g_loss = None
         self.train_op = None
+
+    @property
+    def name(self):
+        return self._name
 
     def build_model(self, img_size, num_z, num_units, num_repeats, batch_norm=True, gray_scale=False):
 
